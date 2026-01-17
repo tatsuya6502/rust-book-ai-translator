@@ -105,8 +105,7 @@ The system SHALL save translation progress for resume capability.
 
 #### Scenario: Checkpoint creation
 - **GIVEN** a translation in progress
-- **AND** 5 chunks have been completed
-- **WHEN** the checkpoint threshold is reached
+- **WHEN** a chunk is completed
 - **THEN** a progress file is created (translation_progress.json)
 - **AND** the file contains completed_chunks count
 - **AND** the file contains total_chunks count
@@ -114,11 +113,10 @@ The system SHALL save translation progress for resume capability.
 - **AND** the file contains a timestamp
 
 #### Scenario: Resume from checkpoint
-- **GIVEN** an existing progress file with 5 completed chunks
-- **AND** a total of 14 chunks
+- **GIVEN** an existing progress file with some completed chunks
 - **WHEN** the system restarts
 - **THEN** the system detects the progress file
-- **AND** translation resumes from chunk 6
+- **AND** translation resumes from the next incomplete chunk
 - **AND** completed chunks are not re-translated
 
 #### Scenario: Checkpoint cleanup on completion
@@ -161,7 +159,7 @@ The system SHALL provide real-time progress feedback during translation.
 
 #### Scenario: ETA estimation
 - **GIVEN** a translation with completed chunks
-- **WHEN** progress is saved (every 5 chunks)
+- **WHEN** a chunk is completed
 - **THEN** the average time per chunk is calculated
 - **AND** the estimated time remaining is displayed
 

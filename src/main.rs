@@ -125,14 +125,12 @@ async fn main() -> Result<()> {
             }
         }
 
-        // Save progress every 5 chunks
-        if (i + 1) % 5 == 0 || i == total_chunks - 1 {
-            save_checkpoint(&translated_chunks, i + 1, total_chunks).await?;
-            let elapsed = start_time.elapsed();
-            let avg_time = elapsed / (i + 1) as u32;
-            let remaining = avg_time * (total_chunks - i - 1) as u32;
-            println!("  💾 Progress saved. ETA: {:?}", remaining);
-        }
+        // Save checkpoint after each chunk
+        save_checkpoint(&translated_chunks, i + 1, total_chunks).await?;
+        let elapsed = start_time.elapsed();
+        let avg_time = elapsed / (i + 1) as u32;
+        let remaining = avg_time * (total_chunks - i - 1) as u32;
+        println!("  💾 Progress saved. ETA: {:?}", remaining);
 
         println!();
     }

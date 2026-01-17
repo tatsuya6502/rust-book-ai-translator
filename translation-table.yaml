@@ -129,7 +129,7 @@ glossary:
   mutable: ミュータブル
   "mutable binding": ミュータブルな束縛
   "mutual-exclusion": 相互排他
-  null: ヌル
+  "null": ヌル
   "object-safe": オブジェクト安全
   offline: オフライン
   opaque: オペーク

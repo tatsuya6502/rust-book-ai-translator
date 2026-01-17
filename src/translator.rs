@@ -1,5 +1,5 @@
 use crate::types::MarkdownChunk;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use regex::Regex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -7,13 +7,10 @@ use std::sync::LazyLock;
 use std::time::Duration;
 
 // Regex to fix italic formatting: `_word_` -> `_word_`
-static ITALIC_BACKTICK_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"`(_[^_]+_)`").unwrap()
-});
+static ITALIC_BACKTICK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"`(_[^_]+_)`").unwrap());
 // Regex to fix reference link formatting: `[text]: url` -> `[text]: url`
-static LINK_BACKTICK_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"`(\[[^\]]+\]:\s*[^\n]+)`").unwrap()
-});
+static LINK_BACKTICK_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"`(\[[^\]]+\]:\s*[^\n]+)`").unwrap());
 
 #[derive(Serialize)]
 struct OllamaRequest<'a> {
@@ -105,9 +102,8 @@ Text to translate:
         let text = ITALIC_BACKTICK_RE.replace_all(&text, "$1").to_string();
 
         // Fix pattern where LLM added backticks around links: `[text]: url` -> `[text]: url`
-        let text = LINK_BACKTICK_RE.replace_all(&text, "$1").to_string();
 
-        text
+        LINK_BACKTICK_RE.replace_all(&text, "$1").to_string()
     }
 
     /// Translate with retry logic
@@ -140,6 +136,10 @@ Text to translate:
             }
         }
 
-        Err(anyhow!("Failed after {} retries: {:?}", max_retries, last_error))
+        Err(anyhow!(
+            "Failed after {} retries: {:?}",
+            max_retries,
+            last_error
+        ))
     }
 }

@@ -1,29 +1,14 @@
 use crate::types::MarkdownChunk;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use regex::Regex;
 use std::sync::LazyLock;
 use tiktoken_rs::cl100k_base;
 
 // Code block pattern: ```language ... ```
-static CODE_BLOCK_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?ms)^(```[^\n]*\n.*?```)").unwrap()
-});
+static CODE_BLOCK_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?ms)^(```[^\n]*\n.*?```)").unwrap());
 // Paragraph break: double newline
-static PARAGRAPH_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\n\n+").unwrap()
-});
-// Header pattern: ## Header
-static HEADER_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^#{1,6}\s").unwrap()
-});
-// Sentence ending: . ! ? followed by space
-static SENTENCE_END_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"[.!?]\s+").unwrap()
-});
-// Clause boundary: , or ;
-static CLAUSE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"[,;]\s+").unwrap()
-});
+static PARAGRAPH_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\n\n+").unwrap());
 
 /// Identify all code blocks and their positions
 /// Returns Vec of (start, end, language)
@@ -103,10 +88,10 @@ fn find_break_point(
         }
 
         // Check for header
-        if let Some(next_char) = text[abs_pos + 1..].chars().next() {
-            if next_char == '#' {
-                last_header = Some(abs_pos);
-            }
+        if let Some(next_char) = text[abs_pos + 1..].chars().next()
+            && next_char == '#'
+        {
+            last_header = Some(abs_pos);
         }
 
         // Check for sentence ending
@@ -147,7 +132,6 @@ pub fn chunk_markdown(content: &str, target_tokens: usize) -> Result<Vec<Markdow
     let mut chunks = Vec::new();
     let code_blocks = identify_code_blocks(content);
 
-    let mut current_start = 0;
     let mut current_text = String::new();
 
     // Split into paragraphs first
@@ -179,12 +163,9 @@ pub fn chunk_markdown(content: &str, target_tokens: usize) -> Result<Vec<Markdow
                 let contains_code = CODE_BLOCK_RE.is_match(&current_text);
                 chunks.push(MarkdownChunk::new(
                     current_text.clone(),
-                    current_start,
-                    current_start + current_text.len(),
                     contains_code,
                     token_count,
                 ));
-                current_start += current_text.len();
                 current_text = String::new();
             }
 
@@ -198,12 +179,9 @@ pub fn chunk_markdown(content: &str, target_tokens: usize) -> Result<Vec<Markdow
                     let token_count = estimate_tokens(split_content);
                     chunks.push(MarkdownChunk::new(
                         split_content.clone(),
-                        current_start,
-                        current_start + split_content.len(),
                         contains_code,
                         token_count,
                     ));
-                    current_start += split_content.len();
                 }
             } else {
                 // Paragraph fits, just start new chunk
@@ -218,8 +196,6 @@ pub fn chunk_markdown(content: &str, target_tokens: usize) -> Result<Vec<Markdow
         let contains_code = CODE_BLOCK_RE.is_match(&current_text);
         chunks.push(MarkdownChunk::new(
             current_text.clone(),
-            current_start,
-            current_start + current_text.len(),
             contains_code,
             token_count,
         ));

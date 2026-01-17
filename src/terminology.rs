@@ -5,9 +5,7 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 
 // Regex to extract base term by removing parenthetical notes
-static PARENS_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\s*\(.*?\)\s*").unwrap()
-});
+static PARENS_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s*\(.*?\)\s*").unwrap());
 
 /// Load translation table from YAML file
 pub fn load_translation_table(path: &str) -> Result<TranslationTable> {
@@ -35,14 +33,14 @@ pub fn extract_relevant_terms(
 
         // Create word boundary pattern for case-insensitive matching
         let pattern = format!(r"(?i)\b{}\b", regex::escape(&base_term));
-        if let Ok(re) = Regex::new(&pattern) {
-            if re.is_match(&chunk_lower) {
-                relevant.insert(term.clone(), translation.clone());
+        if let Ok(re) = Regex::new(&pattern)
+            && re.is_match(&chunk_lower)
+        {
+            relevant.insert(term.clone(), translation.clone());
 
-                // Limit to prevent prompt explosion
-                if relevant.len() >= 15 {
-                    break;
-                }
+            // Limit to prevent prompt explosion
+            if relevant.len() >= 15 {
+                break;
             }
         }
     }

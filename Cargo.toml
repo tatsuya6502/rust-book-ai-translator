@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-lazy_static = "1.5"
 regex = "1.11"
 reqwest = { version = "0.13.1", features = ["json", "rustls"] }
 serde = { version = "1.0.228", features = ["derive"] }

@@ -2,6 +2,12 @@ use crate::types::{Principle, TranslationTable};
 use anyhow::Result;
 use regex::Regex;
 use std::collections::HashMap;
+use std::sync::LazyLock;
+
+// Regex to extract base term by removing parenthetical notes
+static PARENS_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\s*\(.*?\)\s*").unwrap()
+});
 
 /// Load translation table from YAML file
 pub fn load_translation_table(path: &str) -> Result<TranslationTable> {
@@ -48,8 +54,7 @@ pub fn extract_relevant_terms(
 /// e.g., "acquire (lockの)" -> "acquire"
 fn extract_base_term(term: &str) -> String {
     // Remove content in parentheses and surrounding whitespace
-    let re = Regex::new(r"\s*\(.*?\)\s*").unwrap();
-    re.replace(term, "").to_string()
+    PARENS_RE.replace(term, "").to_string()
 }
 
 /// Build the terminology prompt section

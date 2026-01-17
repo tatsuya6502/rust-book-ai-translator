@@ -3,7 +3,17 @@ use anyhow::{anyhow, Result};
 use regex::Regex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::sync::LazyLock;
 use std::time::Duration;
+
+// Regex to fix italic formatting: `_word_` -> `_word_`
+static ITALIC_BACKTICK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"`(_[^_]+_)`").unwrap()
+});
+// Regex to fix reference link formatting: `[text]: url` -> `[text]: url`
+static LINK_BACKTICK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"`(\[[^\]]+\]:\s*[^\n]+)`").unwrap()
+});
 
 #[derive(Serialize)]
 struct OllamaRequest<'a> {
@@ -92,12 +102,10 @@ Text to translate:
     /// Post-process translation to fix formatting issues
     fn post_process_translation(text: String) -> String {
         // Fix pattern where LLM added backticks around italic text: `_word_` -> `_word_
-        let re = Regex::new(r"`(_[^_]+_)`").unwrap();
-        let text = re.replace_all(&text, "$1").to_string();
+        let text = ITALIC_BACKTICK_RE.replace_all(&text, "$1").to_string();
 
         // Fix pattern where LLM added backticks around links: `[text]: url` -> `[text]: url`
-        let re = Regex::new(r"`(\[[^\]]+\]:\s*[^\n]+)`").unwrap();
-        let text = re.replace_all(&text, "$1").to_string();
+        let text = LINK_BACKTICK_RE.replace_all(&text, "$1").to_string();
 
         text
     }

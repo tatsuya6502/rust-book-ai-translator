@@ -1,21 +1,29 @@
 use crate::types::MarkdownChunk;
 use anyhow::{anyhow, Result};
-use lazy_static::lazy_static;
 use regex::Regex;
+use std::sync::LazyLock;
 use tiktoken_rs::tiktoken::cl100k_base;
 
-lazy_static! {
-    // Code block pattern: ```language ... ```
-    static ref CODE_BLOCK_RE: Regex = Regex::new(r"(?ms)^(```[^\n]*\n.*?```)").unwrap();
-    // Paragraph break: double newline
-    static ref PARAGRAPH_RE: Regex = Regex::new(r"\n\n+").unwrap();
-    // Header pattern: ## Header
-    static ref HEADER_RE: Regex = Regex::new(r"^#{1,6}\s").unwrap();
-    // Sentence ending: . ! ? followed by space
-    static ref SENTENCE_END_RE: Regex = Regex::new(r"[.!?]\s+").unwrap();
-    // Clause boundary: , or ;
-    static ref CLAUSE_RE: Regex = Regex::new(r"[,;]\s+").unwrap();
-}
+// Code block pattern: ```language ... ```
+static CODE_BLOCK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?ms)^(```[^\n]*\n.*?```)").unwrap()
+});
+// Paragraph break: double newline
+static PARAGRAPH_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\n\n+").unwrap()
+});
+// Header pattern: ## Header
+static HEADER_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^#{1,6}\s").unwrap()
+});
+// Sentence ending: . ! ? followed by space
+static SENTENCE_END_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"[.!?]\s+").unwrap()
+});
+// Clause boundary: , or ;
+static CLAUSE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"[,;]\s+").unwrap()
+});
 
 /// Identify all code blocks and their positions
 /// Returns Vec of (start, end, language)

@@ -955,7 +955,6 @@ name = "rust-book-translator"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "lazy_static",
  "regex",
  "reqwest",
  "serde",

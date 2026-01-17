@@ -2,7 +2,7 @@ use crate::types::MarkdownChunk;
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use std::sync::LazyLock;
-use tiktoken_rs::tiktoken::cl100k_base;
+use tiktoken_rs::cl100k_base;
 
 // Code block pattern: ```language ... ```
 static CODE_BLOCK_RE: LazyLock<Regex> = LazyLock::new(|| {

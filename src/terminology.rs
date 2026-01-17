@@ -12,7 +12,7 @@ static PARENS_RE: LazyLock<Regex> = LazyLock::new(|| {
 /// Load translation table from YAML file
 pub fn load_translation_table(path: &str) -> Result<TranslationTable> {
     let content = std::fs::read_to_string(path)?;
-    let table: TranslationTable = serde_yaml::from_str(&content)?;
+    let table: TranslationTable = serde_saphyr::from_str(&content)?;
     Ok(table)
 }
 

@@ -4,5 +4,6 @@
         "Reqwest",
         "Serde",
         "tiktoken"
-    ]
+    ],
+    "coderabbit.agentType": "Claude Code"
 }

@@ -14,12 +14,8 @@ The tool:
 - **Rust 2024 Edition** - Primary language
 - **Tokio** - Async runtime (multi-threaded scheduler, filesystem support)
 - **Reqwest** - HTTP client (JSON support, rustls TLS)
-- **Serde** - Serialization framework (with derive feature)
-- **Serde JSON/YAML** - Format-specific serialization
 - **Regex** - Pattern matching and text processing
 - **Tiktoken-rs** - Token counting for chunking
-- **Anyhow** - Error handling
-- **Lazy_static** - Compile-time static data initialization
 
 ## Project Conventions
 
@@ -38,7 +34,7 @@ The tool:
   - `translator` - Ollama API interaction
   - `main` - Orchestration and progress management
 - **Chunk-based processing** - Content split by token count, preserving code blocks
-- **Checkpoint/resume** - JSON progress file saves state every 5 chunks
+- **Checkpoint/resume** - JSON progress file saves state every 1 chunk
 - **Retry logic** - Failed translations retry up to 3 times before failing
 
 ### Testing Strategy

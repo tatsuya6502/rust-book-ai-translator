@@ -71,7 +71,7 @@ fn split_into_paragraphs(content: &str) -> Vec<(String, usize)> {
         if is_blank_line_outside_fence {
             // This is a paragraph boundary
             if !current_paragraph.is_empty() {
-                paragraphs.push((current_paragraph.trim().to_string(), paragraph_start));
+                paragraphs.push((current_paragraph.clone(), paragraph_start));
                 current_paragraph = String::new();
             }
             // Skip blank lines
@@ -92,7 +92,7 @@ fn split_into_paragraphs(content: &str) -> Vec<(String, usize)> {
 
     // Don't forget the last paragraph
     if !current_paragraph.is_empty() {
-        paragraphs.push((current_paragraph.trim().to_string(), paragraph_start));
+        paragraphs.push((current_paragraph.clone(), paragraph_start));
     }
 
     paragraphs

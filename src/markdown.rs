@@ -47,12 +47,16 @@ fn split_into_paragraphs(content: &str) -> Vec<(String, usize)> {
     let mut current_paragraph = String::new();
     let mut paragraph_start = 0;
     let mut in_fence = false;
-    let lines = content.lines().peekable();
+    let content_bytes = content.as_bytes();
     let mut current_offset = 0;
 
-    for line in lines {
-        let line_len = line.len() + 1; // +1 for newline
-        let is_fence = line.trim_start().starts_with("```");
+    for line in content.lines() {
+        // Check if there's actually a newline after this line
+        let next_offset = current_offset + line.len();
+        let has_newline =
+            next_offset < content.len() && content_bytes.get(next_offset) == Some(&b'\n');
+        let line_len = line.len() + if has_newline { 1 } else { 0 };
+        let is_fence = line.trim_start().starts_with("```") || line.trim_start().starts_with("~~~");
 
         // Track fence state
         if is_fence {

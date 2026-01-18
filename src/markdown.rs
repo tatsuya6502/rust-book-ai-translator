@@ -49,6 +49,28 @@ pub fn estimate_tokens(text: &str) -> usize {
     bpe.encode_with_special_tokens(text).len()
 }
 
+/// Convert a token count estimate to a byte offset in the given text
+/// This calculates the approximate character position from tokens and converts it to bytes
+fn tokens_to_byte_offset(text: &str, target_tokens: usize) -> usize {
+    // Calculate average chars per token from the actual text
+    let actual_tokens = estimate_tokens(text);
+    if actual_tokens == 0 {
+        return 0;
+    }
+
+    let char_count = text.chars().count();
+    let avg_chars_per_token = char_count as f64 / actual_tokens as f64;
+
+    // Estimate target character count
+    let target_char_count = (target_tokens as f64 * avg_chars_per_token).round() as usize;
+
+    // Convert character position to byte offset
+    text.char_indices()
+        .nth(target_char_count)
+        .map(|(byte_idx, _)| byte_idx)
+        .unwrap_or(text.len())
+}
+
 /// Find a safe break point in text that doesn't break code blocks
 /// Priority: paragraph > header > sentence > clause > word boundary
 fn find_break_point(
@@ -228,14 +250,19 @@ fn split_large_paragraph(
             break;
         }
 
-        // Find break point
-        let target_end = current_start + (target_tokens * 3 / 4); // Use 75% to account for estimation errors
+        // Find break point - convert token count to byte offset
+        // Use 75% of target tokens to account for estimation errors
+        let target_token_count = target_tokens * 3 / 4;
+        let target_end = current_start + tokens_to_byte_offset(remaining, target_token_count);
+
         if let Some(break_point) = find_break_point(para, current_start, target_end, code_blocks) {
             chunks.push(para[current_start..break_point].to_string());
             current_start = break_point;
         } else {
-            // Force break at character position
-            let break_pos = current_start + target_tokens.min(remaining.len());
+            // Force break at character position - convert tokens to byte offset
+            let break_offset =
+                tokens_to_byte_offset(remaining, target_tokens.min(remaining_tokens));
+            let break_pos = current_start + break_offset;
             chunks.push(para[current_start..break_pos].to_string());
             current_start = break_pos;
         }

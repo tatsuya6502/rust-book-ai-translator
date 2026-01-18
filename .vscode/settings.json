@@ -1,0 +1,9 @@
+{
+    "cSpell.words": [
+        "Ollama",
+        "Reqwest",
+        "Serde",
+        "tiktoken"
+    ],
+    "coderabbit.agentType": "Claude Code"
+}

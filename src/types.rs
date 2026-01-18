@@ -35,12 +35,3 @@ impl MarkdownChunk {
         }
     }
 }
-
-/// Checkpoint for resume capability
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TranslationCheckpoint {
-    pub completed_chunks: usize,
-    pub total_chunks: usize,
-    pub translated_content: Vec<String>,
-    pub timestamp: std::time::SystemTime,
-}

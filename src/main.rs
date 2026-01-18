@@ -1,13 +1,14 @@
+mod checkpoint;
 mod markdown;
 mod terminology;
 mod translator;
 mod types;
 
 use anyhow::Result;
+use checkpoint::{load_checkpoint, save_checkpoint};
 use std::path::Path;
 use tokio::fs;
 use translator::Translator;
-use types::TranslationCheckpoint;
 
 use markdown::chunk_markdown;
 use terminology::{build_terminology_prompt, extract_relevant_terms, load_translation_table};
@@ -65,19 +66,26 @@ async fn main() -> Result<()> {
     println!();
 
     // Check for existing progress
-    let (start_chunk, mut translated_chunks) = if Path::new(PROGRESS_FILE).exists() {
-        println!("🔄 Found existing progress, resuming...");
-        let progress_content = fs::read_to_string(PROGRESS_FILE).await?;
-        let checkpoint: TranslationCheckpoint = serde_json::from_str(&progress_content)?;
-        println!(
-            "  ✓ Resuming from chunk {} of {}",
-            checkpoint.completed_chunks, checkpoint.total_chunks
-        );
-        (checkpoint.completed_chunks, checkpoint.translated_content)
-    } else {
-        println!("🆕 Starting fresh translation");
-        (0, Vec::new())
-    };
+    let total_chunks = chunks.len();
+    let (start_chunk, mut translated_chunks) =
+        match load_checkpoint(PROGRESS_FILE, total_chunks).await {
+            Ok(Some(checkpoint)) => {
+                println!(
+                    "🔄 Resuming from chunk {} of {}",
+                    checkpoint.completed_chunks, checkpoint.total_chunks
+                );
+                (checkpoint.completed_chunks, checkpoint.translated_content)
+            }
+            Ok(None) => {
+                println!("🆕 Starting fresh translation");
+                (0, Vec::new())
+            }
+            Err(e) => {
+                eprintln!("  ✗ Checkpoint validation failed: {}", e);
+                eprintln!("  ⚠ Falling back to fresh translation");
+                (0, Vec::new())
+            }
+        };
     println!();
 
     // Initialize translator
@@ -121,13 +129,13 @@ async fn main() -> Result<()> {
             Err(e) => {
                 eprintln!("  ✗ Failed to translate chunk: {}", e);
                 eprintln!("  ⚠ Saving progress before exiting...");
-                save_checkpoint(&translated_chunks, i, total_chunks).await?;
+                save_checkpoint(&translated_chunks, i, total_chunks, PROGRESS_FILE).await?;
                 return Err(e);
             }
         }
 
         // Save checkpoint after each chunk
-        save_checkpoint(&translated_chunks, i + 1, total_chunks).await?;
+        save_checkpoint(&translated_chunks, i + 1, total_chunks, PROGRESS_FILE).await?;
         let elapsed = start_time.elapsed();
         let session_processed = (i + 1 - processed_before) as u32; // Chunks processed in current session only
         let avg_time = elapsed / session_processed;
@@ -158,23 +166,5 @@ async fn main() -> Result<()> {
     println!("  - Input tokens: {}", input_tokens);
     println!("  - Output size: {} bytes", output_size);
 
-    Ok(())
-}
-
-/// Save checkpoint for resume capability
-async fn save_checkpoint(
-    translated_chunks: &[String],
-    completed: usize,
-    total: usize,
-) -> Result<()> {
-    let checkpoint = TranslationCheckpoint {
-        completed_chunks: completed,
-        total_chunks: total,
-        translated_content: translated_chunks.to_vec(),
-        timestamp: std::time::SystemTime::now(),
-    };
-
-    let json = serde_json::to_string_pretty(&checkpoint)?;
-    fs::write(PROGRESS_FILE, json).await?;
     Ok(())
 }

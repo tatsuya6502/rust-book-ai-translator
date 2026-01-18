@@ -86,6 +86,7 @@ async fn main() -> Result<()> {
     // Translate chunks
     let total_chunks = chunks.len();
     let start_time = std::time::Instant::now();
+    let processed_before = start_chunk; // Number of chunks already processed in previous sessions
 
     for (i, chunk) in chunks.iter().enumerate().skip(start_chunk) {
         let progress_percent = ((i + 1) as f64 / total_chunks as f64) * 100.0;
@@ -128,7 +129,8 @@ async fn main() -> Result<()> {
         // Save checkpoint after each chunk
         save_checkpoint(&translated_chunks, i + 1, total_chunks).await?;
         let elapsed = start_time.elapsed();
-        let avg_time = elapsed / (i + 1) as u32;
+        let session_processed = (i + 1 - processed_before) as u32; // Chunks processed in current session only
+        let avg_time = elapsed / session_processed;
         let remaining = avg_time * (total_chunks - i - 1) as u32;
         println!("  💾 Progress saved. ETA: {:?}", remaining);
 

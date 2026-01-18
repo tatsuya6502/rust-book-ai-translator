@@ -5,7 +5,9 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 
 // Regex to extract base term by removing parenthetical notes
-static PARENS_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s*\(.*?\)\s*").unwrap());
+static PARENS_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\s*\(.*?\)\s*").expect("Failed to compile PARENS_RE regex pattern")
+});
 
 /// Load translation table from YAML file
 pub fn load_translation_table(path: &str) -> Result<TranslationTable> {

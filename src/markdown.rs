@@ -45,7 +45,7 @@ fn is_inside_code_block(pos: usize, code_blocks: &[(usize, usize, String)]) -> b
 
 /// Estimate token count using tiktoken
 pub fn estimate_tokens(text: &str) -> usize {
-    let bpe = cl100k_base().unwrap();
+    let bpe = cl100k_base().expect("failed to initialize cl100k_base tokenizer");
     bpe.encode_with_special_tokens(text).len()
 }
 

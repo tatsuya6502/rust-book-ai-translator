@@ -101,10 +101,10 @@ Text to translate:
 
     /// Post-process translation to fix formatting issues
     fn post_process_translation(text: String) -> String {
-        // Fix pattern where LLM added backticks around italic text: `_word_` -> `_word_
+        // Fix pattern where LLM added backticks around italic text: `_word_` -> _word_
         let text = ITALIC_BACKTICK_RE.replace_all(&text, "$1").to_string();
 
-        // Fix pattern where LLM added backticks around links: `[text]: url` -> `[text]: url`
+        // Fix pattern where LLM added backticks around links: `[text]: url` -> [text]: url
 
         LINK_BACKTICK_RE.replace_all(&text, "$1").to_string()
     }

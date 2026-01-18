@@ -330,18 +330,39 @@ fn split_large_paragraph(
         }
 
         // Find break point - convert token count to byte offset
-        // Use 75% of target tokens to account for estimation errors
-        let target_token_count = target_tokens * 3 / 4;
+        // Use 75% of target tokens to account for estimation errors, minimum 1
+        let target_token_count = (target_tokens * 3 / 4).max(1);
         let target_end = current_start + tokens_to_byte_offset(remaining, target_token_count);
 
         if let Some(break_point) = find_break_point(para, current_start, target_end, code_blocks) {
-            chunks.push(para[current_start..break_point].to_string());
-            current_start = break_point;
+            // Ensure we make progress
+            if break_point > current_start {
+                chunks.push(para[current_start..break_point].to_string());
+                current_start = break_point;
+            } else {
+                // Force advance by at least one character
+                let next_char_boundary = para[current_start..]
+                    .char_indices()
+                    .nth(1)
+                    .map(|(idx, _)| current_start + idx)
+                    .unwrap_or(para.len());
+                chunks.push(para[current_start..next_char_boundary].to_string());
+                current_start = next_char_boundary;
+            }
         } else {
             // Force break at character position - convert tokens to byte offset
+            // Ensure we make progress - advance at least one character
             let break_offset =
                 tokens_to_byte_offset(remaining, target_tokens.min(remaining_tokens));
-            let break_pos = current_start + break_offset;
+            let break_pos = if break_offset == 0 {
+                para[current_start..]
+                    .char_indices()
+                    .nth(1)
+                    .map(|(idx, _)| current_start + idx)
+                    .unwrap_or(para.len())
+            } else {
+                current_start + break_offset
+            };
             chunks.push(para[current_start..break_pos].to_string());
             current_start = break_pos;
         }

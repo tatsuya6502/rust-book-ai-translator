@@ -5,8 +5,9 @@ use std::sync::LazyLock;
 use tiktoken_rs::cl100k_base;
 
 // Code block pattern: ```language ... ```
-static CODE_BLOCK_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?ms)^(```[^\n]*\n.*?```)").expect("Failed to compile code block regex"));
+static CODE_BLOCK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?ms)^(```[^\n]*\n.*?```)").expect("Failed to compile code block regex")
+});
 // Paragraph break: double newline
 static PARAGRAPH_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\n\n+").expect("Failed to compile paragraph regex"));

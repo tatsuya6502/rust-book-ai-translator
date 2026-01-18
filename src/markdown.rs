@@ -8,9 +8,6 @@ use tiktoken_rs::cl100k_base;
 static CODE_BLOCK_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?ms)^(```[^\n]*\n.*?```)").expect("Failed to compile code block regex")
 });
-// Paragraph break: double newline
-static PARAGRAPH_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\n\n+").expect("Failed to compile paragraph regex"));
 
 /// Identify all code blocks and their positions
 /// Returns Vec of (start, end, language)
@@ -41,6 +38,81 @@ fn is_inside_code_block(pos: usize, code_blocks: &[(usize, usize, String)]) -> b
         }
     }
     false
+}
+
+/// Split content into paragraphs while respecting fenced code blocks
+/// Returns Vec of (paragraph_text, paragraph_start_offset)
+fn split_into_paragraphs(content: &str) -> Vec<(String, usize)> {
+    let mut paragraphs = Vec::new();
+    let mut current_paragraph = String::new();
+    let mut paragraph_start = 0;
+    let mut in_fence = false;
+    let lines = content.lines().peekable();
+    let mut current_offset = 0;
+
+    for line in lines {
+        let line_len = line.len() + 1; // +1 for newline
+        let is_fence = line.trim_start().starts_with("```");
+
+        // Track fence state
+        if is_fence {
+            in_fence = !in_fence;
+        }
+
+        // Check if this line is a blank line that's NOT inside a fence
+        let is_blank_line_outside_fence = line.trim().is_empty() && !in_fence;
+
+        if is_blank_line_outside_fence {
+            // This is a paragraph boundary
+            if !current_paragraph.is_empty() {
+                paragraphs.push((current_paragraph.trim().to_string(), paragraph_start));
+                current_paragraph = String::new();
+            }
+            // Skip blank lines
+            // Update paragraph_start to after this blank line
+            paragraph_start = current_offset + line_len;
+        } else {
+            if current_paragraph.is_empty() {
+                paragraph_start = current_offset;
+            }
+            if !current_paragraph.is_empty() {
+                current_paragraph.push('\n');
+            }
+            current_paragraph.push_str(line);
+        }
+
+        current_offset += line_len;
+    }
+
+    // Don't forget the last paragraph
+    if !current_paragraph.is_empty() {
+        paragraphs.push((current_paragraph.trim().to_string(), paragraph_start));
+    }
+
+    paragraphs
+}
+
+/// Convert global code block positions to paragraph-local positions
+/// Returns code blocks that are within the paragraph with positions adjusted to be relative to paragraph start
+fn get_paragraph_local_code_blocks(
+    paragraph_start: usize,
+    paragraph_end: usize,
+    code_blocks: &[(usize, usize, String)],
+) -> Vec<(usize, usize, String)> {
+    code_blocks
+        .iter()
+        .filter_map(|(start, end, lang)| {
+            // Check if this code block overlaps with the paragraph
+            if *start < paragraph_end && *end > paragraph_start {
+                // Calculate the intersection and adjust to paragraph-local coordinates
+                let local_start = start.saturating_sub(paragraph_start);
+                let local_end = (*end).min(paragraph_end) - paragraph_start;
+                Some((local_start, local_end, lang.clone()))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 /// Estimate token count using tiktoken
@@ -158,17 +230,16 @@ pub fn chunk_markdown(content: &str, target_tokens: usize) -> Result<Vec<Markdow
 
     let mut current_text = String::new();
 
-    // Split into paragraphs first
-    let paragraphs: Vec<&str> = PARAGRAPH_RE.split(content).collect();
+    // Split into paragraphs using fence-aware splitting
+    let paragraphs = split_into_paragraphs(content);
 
-    for para in paragraphs {
-        let para = para.trim();
+    for (para, para_start) in paragraphs {
         if para.is_empty() {
             continue;
         }
 
         let potential_content = if current_text.is_empty() {
-            para.to_string()
+            para.clone()
         } else {
             format!("{}\n\n{}", current_text, para)
         };
@@ -194,10 +265,14 @@ pub fn chunk_markdown(content: &str, target_tokens: usize) -> Result<Vec<Markdow
             }
 
             // Check if the paragraph itself is too large
-            let para_tokens = estimate_tokens(para);
+            let para_tokens = estimate_tokens(&para);
             if para_tokens > target_tokens {
                 // Need to split the paragraph
-                let split_chunks = split_large_paragraph(para, target_tokens, &code_blocks)?;
+                // Get paragraph-local code blocks
+                let para_end = para_start + para.len();
+                let local_code_blocks =
+                    get_paragraph_local_code_blocks(para_start, para_end, &code_blocks);
+                let split_chunks = split_large_paragraph(&para, target_tokens, &local_code_blocks)?;
                 for split_content in split_chunks.iter() {
                     let contains_code = CODE_BLOCK_RE.is_match(split_content);
                     let token_count = estimate_tokens(split_content);
@@ -209,7 +284,7 @@ pub fn chunk_markdown(content: &str, target_tokens: usize) -> Result<Vec<Markdow
                 }
             } else {
                 // Paragraph fits, just start new chunk
-                current_text = para.to_string();
+                current_text = para;
             }
         }
     }

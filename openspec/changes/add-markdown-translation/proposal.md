@@ -2,9 +2,9 @@
 
 ## Why
 
-The Rust Book translation project needs a reliable way to translate English markdown documentation to Japanese using local LLMs (Ollama) while ensuring:
+The Rust Book translation project needs a reliable way to translate English Markdown documentation to Japanese using local LLMs (Ollama) while ensuring:
 - Consistent technical terminology across translations
-- Preservation of code blocks and markdown formatting
+- Preservation of code blocks and Markdown formatting
 - Ability to handle large files through chunking
 - Resume capability for long-running translations
 
@@ -21,7 +21,7 @@ All changes are additive - no breaking changes to existing functionality.
 
 ## Impact
 
-- **New capabilities**: markdown-translation
+- **New capabilities**: Markdown-translation
 - **Affected code**:
   - `src/main.rs` - Orchestration and progress management
   - `src/translator.rs` - Ollama API client with terminology-aware prompts

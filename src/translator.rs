@@ -7,10 +7,13 @@ use std::sync::LazyLock;
 use std::time::Duration;
 
 // Regex to fix italic formatting: `_word_` -> `_word_`
-static ITALIC_BACKTICK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"`(_[^_]+_)`").unwrap());
+static ITALIC_BACKTICK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"`(_[^_]+_)`").expect("Failed to compile ITALIC_BACKTICK_RE regex")
+});
 // Regex to fix reference link formatting: `[text]: url` -> `[text]: url`
-static LINK_BACKTICK_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"`(\[[^\]]+\]:\s*[^\n]+)`").unwrap());
+static LINK_BACKTICK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"`(\[[^\]]+\]:\s*[^\n]+)`").expect("Failed to compile LINK_BACKTICK_RE regex")
+});
 
 #[derive(Serialize)]
 struct OllamaRequest<'a> {

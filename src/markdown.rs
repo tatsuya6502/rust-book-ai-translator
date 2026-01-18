@@ -4,9 +4,11 @@ use regex::Regex;
 use std::sync::LazyLock;
 use tiktoken_rs::cl100k_base;
 
-// Code block pattern: ```language ... ```
+// Code block pattern: ```language ... ``` or ~~~language ... ~~~
+// CommonMark compliant: 0-3 leading spaces, both backtick and tilde fences
 static CODE_BLOCK_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?ms)^(```[^\n]*\n.*?```)").expect("Failed to compile code block regex")
+    Regex::new(r"(?ms)^[ ]{0,3}(?:```|~~~)[^\n]*\n.*?^[ ]{0,3}(?:```|~~~)\s*$")
+        .expect("Failed to compile code block regex")
 });
 
 /// Identify all code blocks and their positions
